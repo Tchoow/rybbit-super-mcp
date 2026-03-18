@@ -42,12 +42,15 @@ Add the MCP server to your Claude Code settings (`~/.claude/settings.json`):
       "args": ["/absolute/path/to/rybbit-super-mcp/build/index.js"],
       "env": {
         "RYBBIT_URL": "https://your-rybbit-instance.com",
-        "RYBBIT_API_KEY": "your-api-key"
+        "RYBBIT_EMAIL": "your-email@example.com",
+        "RYBBIT_PASSWORD": "your-password"
       }
     }
   }
 }
 ```
+
+> **Why email/password?** Rybbit's funnel and goal CRUD endpoints require session-based authentication. API key auth works for read-only tools but returns 403 on write operations. See [Authentication](#authentication) for details.
 
 **Option 2 — Via npx (no clone needed):**
 
@@ -59,7 +62,8 @@ Add the MCP server to your Claude Code settings (`~/.claude/settings.json`):
       "args": ["-y", "github:Tchoow/rybbit-super-mcp"],
       "env": {
         "RYBBIT_URL": "https://your-rybbit-instance.com",
-        "RYBBIT_API_KEY": "your-api-key"
+        "RYBBIT_EMAIL": "your-email@example.com",
+        "RYBBIT_PASSWORD": "your-password"
       }
     }
   }
