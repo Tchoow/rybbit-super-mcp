@@ -1,0 +1,50 @@
+{
+  "name": "rybbit-super-mcp",
+  "version": "1.0.0",
+  "description": "Extended MCP server for Rybbit Analytics — full CRUD for funnels, goals, and sites. Fork of @nks-hub/rybbit-mcp with 40 tools.",
+  "type": "module",
+  "main": "build/index.js",
+  "bin": {
+    "rybbit-super-mcp": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node build/index.js",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "rybbit",
+    "analytics",
+    "claude",
+    "claude-code",
+    "model-context-protocol",
+    "web-analytics",
+    "funnels",
+    "goals",
+    "prestashop",
+    "e-commerce"
+  ],
+  "author": "Tchoow <contact@flowcode.fr>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tchoow/rybbit-super-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Tchoow/rybbit-super-mcp/issues"
+  },
+  "homepage": "https://github.com/Tchoow/rybbit-super-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

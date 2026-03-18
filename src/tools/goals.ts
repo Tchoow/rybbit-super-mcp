@@ -1,0 +1,176 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+import { RybbitClient, truncateResponse } from "../client.js";
+import { filterSchema, paginationSchema, siteIdSchema } from "../schemas.js";
+
+interface Goal {
+  id: string | number;
+  name: string;
+  type: string;
+  value?: string;
+  conversions?: number;
+  conversionRate?: number;
+  [key: string]: unknown;
+}
+
+export function registerGoalsTools(
+  server: McpServer,
+  client: RybbitClient
+): void {
+  server.registerTool(
+    "rybbit_list_goals",
+    {
+      title: "List Goals",
+      description:
+        "List all goals for a site with their current conversion metrics and configuration.",
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+        destructiveHint: false,
+      },
+      inputSchema: {
+        siteId: siteIdSchema,
+        startDate: z
+          .string()
+          .optional()
+          .describe("Start date (YYYY-MM-DD)"),
+        endDate: z
+          .string()
+          .optional()
+          .describe("End date (YYYY-MM-DD)"),
+        timeZone: z
+          .string()
+          .optional()
+          .describe("IANA timezone (default UTC)"),
+        filters: z
+          .array(filterSchema)
+          .optional()
+          .describe("Filters to apply"),
+        pastMinutesStart: z
+          .number()
+          .optional()
+          .describe("Minutes ago start"),
+        pastMinutesEnd: z
+          .number()
+          .optional()
+          .describe("Minutes ago end"),
+      },
+    },
+    async (args) => {
+      try {
+        const { siteId, ...rest } = args as {
+          siteId: string;
+          startDate?: string;
+          endDate?: string;
+          timeZone?: string;
+          filters?: Array<{
+            parameter: string;
+            type: string;
+            value: (string | number)[];
+          }>;
+          pastMinutesStart?: number;
+          pastMinutesEnd?: number;
+        };
+
+        const params = client.buildAnalyticsParams(rest);
+
+        const data = await client.get<Goal[]>(
+          `/sites/${siteId}/goals`,
+          params
+        );
+        return {
+          content: [{ type: "text" as const, text: truncateResponse(data) }],
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Error: ${message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.registerTool(
+    "rybbit_get_goal_sessions",
+    {
+      title: "Goal Sessions",
+      description:
+        "Get sessions that completed a specific goal. Useful for analyzing which users and sessions triggered goal conversions.",
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+        destructiveHint: false,
+      },
+      inputSchema: {
+        siteId: siteIdSchema,
+        goalId: z
+          .string()
+          .describe("Goal ID to get sessions for. Use rybbit_list_goals to find goal IDs."),
+        startDate: z
+          .string()
+          .optional()
+          .describe("Start date (YYYY-MM-DD)"),
+        endDate: z
+          .string()
+          .optional()
+          .describe("End date (YYYY-MM-DD)"),
+        timeZone: z
+          .string()
+          .optional()
+          .describe("IANA timezone (default UTC)"),
+        filters: z
+          .array(filterSchema)
+          .optional()
+          .describe("Filters to apply"),
+        pastMinutesStart: z
+          .number()
+          .optional()
+          .describe("Minutes ago start"),
+        pastMinutesEnd: z
+          .number()
+          .optional()
+          .describe("Minutes ago end"),
+        ...paginationSchema,
+      },
+    },
+    async (args) => {
+      try {
+        const { siteId, goalId, ...rest } = args as {
+          siteId: string;
+          goalId: string;
+          startDate?: string;
+          endDate?: string;
+          timeZone?: string;
+          filters?: Array<{
+            parameter: string;
+            type: string;
+            value: (string | number)[];
+          }>;
+          pastMinutesStart?: number;
+          pastMinutesEnd?: number;
+          page?: number;
+          limit?: number;
+        };
+
+        const params = client.buildAnalyticsParams({ ...rest, page: rest.page ?? 1 });
+
+        const data = await client.get(
+          `/sites/${siteId}/goals/${goalId}/sessions`,
+          params
+        );
+        return {
+          content: [{ type: "text" as const, text: truncateResponse(data) }],
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: "text" as const, text: `Error: ${message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+}
