@@ -102,8 +102,7 @@ export function registerExtrasTools(
       description:
         "Get aggregated daily event counts across all sites in an organization. " +
         "Includes breakdown by event type (pageviews, custom events, errors, etc.). " +
-        "Use rybbit_list_sites to find organization IDs. " +
-        "Note: may require session-based auth (email/password) — API key auth can return 403.",
+        "Use rybbit_list_sites to find organization IDs.",
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,

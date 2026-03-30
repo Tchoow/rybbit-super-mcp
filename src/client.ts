@@ -2,7 +2,13 @@
  * HTTP client for Rybbit API requests.
  */
 
-import { AuthConfig, getAuthHeaders, clearSession } from "./auth.js";
+import {
+  AuthConfig,
+  getAuthHeaders,
+  getSessionAuthHeaders,
+  hasSessionFallback,
+  clearSession,
+} from "./auth.js";
 import { CHARACTER_LIMIT, REQUEST_TIMEOUT_MS } from "./constants.js";
 
 export interface FilterParam {
@@ -94,6 +100,12 @@ export class RybbitClient {
       return this.request<T>(method, url, body, true);
     }
 
+    // 403 fallback: if API key returns 403, retry with session auth.
+    // Older Rybbit versions have handler-level session checks on CRUD endpoints.
+    if (res.status === 403 && !isRetry && hasSessionFallback(this.config)) {
+      return this.requestWithSession<T>(method, url, body);
+    }
+
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       throw new Error(formatApiError(res.status, text));
@@ -104,6 +116,53 @@ export class RybbitClient {
       return (await res.json()) as T;
     }
 
+    return (await res.text()) as unknown as T;
+  }
+
+  /**
+   * Retry a request using session auth (email/password) instead of API key.
+   * Used as a fallback when API key returns 403 on CRUD endpoints.
+   */
+  private async requestWithSession<T>(
+    method: string,
+    url: string,
+    body?: unknown
+  ): Promise<T> {
+    const headers = await getSessionAuthHeaders(this.config);
+    if (!body) delete headers["Content-Type"];
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new Error(
+          `Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s. Try narrowing the date range or adding filters.`
+        );
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(formatApiError(res.status, text));
+    }
+
+    const contentType = res.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      return (await res.json()) as T;
+    }
     return (await res.text()) as unknown as T;
   }
 

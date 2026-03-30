@@ -47,7 +47,6 @@ export function registerGoalsCrudTools(
         "Create a new conversion goal in Rybbit. A goal tracks conversions when users visit a specific page path or trigger a custom event. " +
         "For path goals: set goalType='path' and config.pathPattern (e.g. '/order-confirmation'). " +
         "For event goals: set goalType='event' and config.eventName (e.g. 'purchase'). " +
-        "Note: requires session-based auth (email/password). API key auth may return 403 due to a Rybbit server limitation. " +
         "Use rybbit_list_goals to verify creation afterward.",
       annotations: {
         readOnlyHint: false,
@@ -96,8 +95,7 @@ export function registerGoalsCrudTools(
       title: "Update Goal",
       description:
         "Update an existing goal. You must provide the full goal definition (goalType + config) as the update replaces the entire goal. " +
-        "Use rybbit_list_goals to find goal IDs and current configuration. " +
-        "Note: requires session-based auth (email/password). API key auth may return 403 due to a Rybbit server limitation.",
+        "Use rybbit_list_goals to find goal IDs and current configuration.",
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -155,8 +153,7 @@ export function registerGoalsCrudTools(
       title: "Delete Goal",
       description:
         "Permanently delete a conversion goal. This cannot be undone. " +
-        "Use rybbit_list_goals to find goal IDs. " +
-        "Note: requires session-based auth (email/password). API key auth may return 403 due to a Rybbit server limitation.",
+        "Use rybbit_list_goals to find goal IDs.",
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
@@ -203,8 +200,7 @@ export function registerGoalsCrudTools(
       title: "Batch Create Goals",
       description:
         "Create multiple conversion goals at once. Each goal is created sequentially to respect rate limits. " +
-        "If one fails, the others still proceed. Returns a summary of successes and failures. " +
-        "Note: requires session-based auth (email/password). API key auth may return 403 due to a Rybbit server limitation.",
+        "If one fails, the others still proceed. Returns a summary of successes and failures.",
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,

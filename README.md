@@ -42,6 +42,7 @@ Add the MCP server to your Claude Code settings (`~/.claude/settings.json`):
       "args": ["/absolute/path/to/rybbit-super-mcp/build/index.js"],
       "env": {
         "RYBBIT_URL": "https://your-rybbit-instance.com",
+        "RYBBIT_API_KEY": "your-api-key-here",
         "RYBBIT_EMAIL": "your-email@example.com",
         "RYBBIT_PASSWORD": "your-password"
       }
@@ -50,7 +51,7 @@ Add the MCP server to your Claude Code settings (`~/.claude/settings.json`):
 }
 ```
 
-> **Why email/password?** Rybbit's funnel and goal CRUD endpoints require session-based authentication. API key auth works for read-only tools but returns 403 on write operations. See [Authentication](#authentication) for details.
+> **API key is used first** for all read operations (stateless, fast). For CRUD operations (funnels/goals), the MCP automatically falls back to session auth if the API key returns 403. See [Authentication](#authentication) for details.
 
 **Option 2 — Via npx (no clone needed):**
 
@@ -62,6 +63,7 @@ Add the MCP server to your Claude Code settings (`~/.claude/settings.json`):
       "args": ["-y", "github:Tchoow/rybbit-super-mcp"],
       "env": {
         "RYBBIT_URL": "https://your-rybbit-instance.com",
+        "RYBBIT_API_KEY": "your-api-key-here",
         "RYBBIT_EMAIL": "your-email@example.com",
         "RYBBIT_PASSWORD": "your-password"
       }
@@ -231,16 +233,17 @@ For time-series endpoints: `minute`, `five_minutes`, `ten_minutes`, `fifteen_min
 
 ## Authentication
 
-Two modes are supported. **Email/Password is recommended** for full access to all 48 tools:
+Two modes are supported. **API key + email/password** is the recommended setup for full access:
 
 | Mode | Environment Variables | CRUD Support |
 |------|----------------------|--------------|
-| **Email/Password** (recommended) | `RYBBIT_EMAIL`, `RYBBIT_PASSWORD` | All 48 tools |
-| **API Key** | `RYBBIT_API_KEY` | Read + site config (funnel/goal CRUD returns 403) |
+| **API Key + Email/Password** (recommended) | `RYBBIT_API_KEY`, `RYBBIT_EMAIL`, `RYBBIT_PASSWORD` | All 48 tools (automatic fallback) |
+| **API Key only** | `RYBBIT_API_KEY` | Read + site config (CRUD may fail on older Rybbit versions) |
+| **Email/Password only** | `RYBBIT_EMAIL`, `RYBBIT_PASSWORD` | All 48 tools |
 
-Both require `RYBBIT_URL` — the URL of your Rybbit instance (without trailing slash).
+All modes require `RYBBIT_URL` — the URL of your Rybbit instance (without trailing slash).
 
-When both are provided, **email/password takes priority** since session auth works for all endpoints. API key auth is limited due to a Rybbit server-side issue where CRUD handlers only recognize session-based auth.
+**How it works:** API key is used first (stateless, fast). If a CRUD request returns 403 and email/password credentials are available, the MCP automatically retries with session auth. This transparent fallback ensures all 48 tools work regardless of the Rybbit server version.
 
 **Recommended config** (full access):
 
@@ -252,6 +255,7 @@ When both are provided, **email/password takes priority** since session auth wor
       "args": ["/path/to/rybbit-super-mcp/build/index.js"],
       "env": {
         "RYBBIT_URL": "https://your-rybbit-instance.com",
+        "RYBBIT_API_KEY": "your-api-key-here",
         "RYBBIT_EMAIL": "your-email@example.com",
         "RYBBIT_PASSWORD": "your-password"
       }
@@ -293,36 +297,6 @@ Goals use `goalType` ("path" or "event") and a `config` object:
 Then get the sessions that dropped off at that step so I can understand why."
 ```
 
-## Known Limitations
-
-### CRUD tools and API key authentication
-
-Rybbit's CRUD handlers (create/update/delete funnels and goals) perform a redundant session-based access check that doesn't recognize API key authentication. This means:
-
-- **Read tools** (32 tools): Work perfectly with API key auth
-- **Site config tools** (create_site, update_site_config, delete_site): Work with API key auth
-- **Funnel/Goal CRUD tools** (8 tools): May return **403 Forbidden** with API key auth
-
-**Workaround**: Use email/password authentication instead of API key:
-
-```json
-{
-  "mcpServers": {
-    "rybbit": {
-      "command": "node",
-      "args": ["/path/to/rybbit-super-mcp/build/index.js"],
-      "env": {
-        "RYBBIT_URL": "https://your-rybbit-instance.com",
-        "RYBBIT_EMAIL": "your-email@example.com",
-        "RYBBIT_PASSWORD": "your-password"
-      }
-    }
-  }
-}
-```
-
-This issue is tracked upstream in the Rybbit server. API key auth works at the middleware level but the handler's internal `getUserHasAccessToSite()` only supports session-based auth.
-
 ## Differences from upstream
 
 | Feature | `@nks-hub/rybbit-mcp` | `rybbit-super-mcp` |
@@ -344,7 +318,7 @@ This issue is tracked upstream in the Rybbit server. API key auth works at the m
 | Site details | — | `rybbit_get_site_details` |
 | Excluded IPs | — | `rybbit_get_excluded_ips` |
 | Excluded countries | — | `rybbit_get_excluded_countries` |
-| Auth priority | API key first | Email/password first (full CRUD) |
+| Auth priority | API key first | API key first + automatic session fallback on 403 |
 | LLM instructions | Basic workflow | Full CRUD workflow guide |
 
 ## Development

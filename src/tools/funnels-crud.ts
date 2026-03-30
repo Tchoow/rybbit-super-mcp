@@ -50,7 +50,6 @@ export function registerFunnelsCrudTools(
       description:
         "Create and save a new funnel in Rybbit. Requires a name and at least 2 steps. " +
         "Each step is either a page path (supports wildcards) or a custom event name. " +
-        "Note: requires session-based auth (email/password). API key auth may return 403 due to a Rybbit server limitation. " +
         "Use rybbit_list_funnels to verify creation afterward.",
       annotations: {
         readOnlyHint: false,
@@ -101,8 +100,7 @@ export function registerFunnelsCrudTools(
       title: "Update Funnel",
       description:
         "Update an existing funnel's name and/or steps. Uses the create endpoint with reportId to perform an upsert. " +
-        "Use rybbit_list_funnels to find funnel IDs (the 'id' field is the reportId). " +
-        "Note: requires session-based auth (email/password). API key auth may return 403 due to a Rybbit server limitation.",
+        "Use rybbit_list_funnels to find funnel IDs (the 'id' field is the reportId).",
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -157,8 +155,7 @@ export function registerFunnelsCrudTools(
       title: "Delete Funnel",
       description:
         "Permanently delete a saved funnel. This cannot be undone. " +
-        "Use rybbit_list_funnels to find funnel IDs. " +
-        "Note: requires session-based auth (email/password). API key auth may return 403 due to a Rybbit server limitation.",
+        "Use rybbit_list_funnels to find funnel IDs.",
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
@@ -205,8 +202,7 @@ export function registerFunnelsCrudTools(
       title: "Batch Create Funnels",
       description:
         "Create multiple funnels at once. Each funnel is created sequentially to respect rate limits. " +
-        "If one fails, the others still proceed. Returns a summary of successes and failures. " +
-        "Note: requires session-based auth (email/password). API key auth may return 403 due to a Rybbit server limitation.",
+        "If one fails, the others still proceed. Returns a summary of successes and failures.",
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,

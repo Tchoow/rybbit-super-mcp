@@ -2,11 +2,11 @@
  * Authentication for Rybbit API.
  * Supports API key (Bearer token) or email+password (better-auth session cookie).
  *
- * Priority: email+password > API key.
- * Session auth is preferred because it works for ALL endpoints including
- * funnel/goal CRUD, while API key auth returns 403 on write handlers
- * due to a Rybbit server limitation (handler-level getUserHasAccessToSite
- * only recognizes session-based auth).
+ * Priority: API key > email+password.
+ * API key is preferred — it's stateless and works for all middleware layers.
+ * Some older Rybbit versions have handler-level session checks on CRUD
+ * endpoints (funnels/goals). When both API key and email/password are
+ * configured, the client will automatically retry with session auth on 403.
  */
 
 export interface AuthConfig {
@@ -42,8 +42,13 @@ export async function getAuthHeaders(
     Accept: "application/json",
   };
 
-  // Prefer session auth (email/password) — it works for ALL endpoints.
-  // API key auth fails on funnel/goal CRUD handlers due to a Rybbit server bug.
+  // Prefer API key — stateless, works for ALL endpoints including CRUD.
+  if (config.apiKey) {
+    headers["Authorization"] = `Bearer ${config.apiKey}`;
+    return headers;
+  }
+
+  // Fallback to session auth (email/password) if no API key provided.
   if (config.email && config.password) {
     if (!sessionCookie) {
       await loginWithCredentials(config);
@@ -51,11 +56,6 @@ export async function getAuthHeaders(
     if (sessionCookie) {
       headers["Cookie"] = sessionCookie;
     }
-    return headers;
-  }
-
-  if (config.apiKey) {
-    headers["Authorization"] = `Bearer ${config.apiKey}`;
     return headers;
   }
 
@@ -97,4 +97,36 @@ async function loginWithCredentials(config: AuthConfig): Promise<void> {
 
 export function clearSession(): void {
   sessionCookie = null;
+}
+
+/**
+ * Returns true if the config has session auth credentials available
+ * (email/password) that can be used as a 403 fallback.
+ */
+export function hasSessionFallback(config: AuthConfig): boolean {
+  return !!(config.apiKey && config.email && config.password);
+}
+
+/**
+ * Get session-based auth headers (email/password login).
+ * Used as a fallback when API key auth returns 403 on CRUD endpoints.
+ */
+export async function getSessionAuthHeaders(
+  config: AuthConfig
+): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+
+  if (config.email && config.password) {
+    if (!sessionCookie) {
+      await loginWithCredentials(config);
+    }
+    if (sessionCookie) {
+      headers["Cookie"] = sessionCookie;
+    }
+  }
+
+  return headers;
 }
